@@ -4,4 +4,6 @@ function B_r = rotVecWithQuat(q_BA,A_r)
   
   % PLACEHOLDER FOR OUTPUT -> REPLACE WITH SOLUTION
   B_r = zeros(3,1);
+  C_BA = quatToRotMat(q_BA);
+  B_r = C_BA*A_r;
 end
