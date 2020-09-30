@@ -5,5 +5,5 @@ function J_P = jointToPosJac(q)
 
   % Compute the translational jacobian.
   J_P = zeros(3, 6);
-    
+
 end
