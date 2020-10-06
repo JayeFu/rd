@@ -25,14 +25,16 @@ while (it==0 || (norm(dxe)>tol && it < max_it))
     
     % 5. Find the end-effector configuration error vector
     % position error
-    dr = ; 
+    dr = I_r_IE_des-jointToPosition(q); 
+    % rotation matrix at current time
+    C_IE = jointToRotMat(q);
     % rotation error
-    dph = ; 
+    dph = rotMatToRotVec(C_IE_des*C_IE');
     % pose error
-    dxe = ;
+    dxe = [dr; dph];
     
     % 6. Update the generalized coordinates
-    q = ;
+    q = q + alpha*I_J_pinv*dxe;
      
     % Update robot
     abbRobot.setJointPositions(q);
@@ -44,9 +46,11 @@ end
 
 % Get final error (as for 5.)
 % position error
-dr = ;
+dr = I_r_IE_des-jointToPosition(q);
+% rotation matrix at current time
+C_IE = jointToRotMat(q);
 % rotation error
-dph = ;
+dph = rotMatToRotVec(C_IE_des*C_IE');
 
 fprintf('Inverse kinematics terminated after %d iterations.\n', it);
 fprintf('Position error: %e.\n', norm(dr));
