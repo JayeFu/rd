@@ -18,10 +18,10 @@ q = q_0;
 % 2. Iterate until terminating condition.
 while (it==0 || (norm(dxe)>tol && it < max_it))
     % 3. evaluate Jacobian for current q
-    I_J = ;
+    I_J = jointToJac(q);
     
     % 4. Update the psuedo inverse
-    I_J_pinv = ;
+    I_J_pinv = pseudoInverseMat(I_J,lambda);
     
     % 5. Find the end-effector configuration error vector
     % position error
