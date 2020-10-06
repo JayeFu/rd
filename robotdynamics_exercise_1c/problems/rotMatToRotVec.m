@@ -8,7 +8,7 @@ phi = zeros(3,1);
 % rotation angle
 t = acos(0.5*(C(1,1)+C(2,2)+C(3,3)-1));
 
-if t==0
+if abs(t)<eps
     phi = zeros(3,1);
     return
 end
