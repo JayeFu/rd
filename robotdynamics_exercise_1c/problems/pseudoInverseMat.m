@@ -12,7 +12,7 @@ pinvA = zeros(n, m);
 % Whether left inverse or right inverse
 if m>=n % left inverse
     pinvA = (A'*A+lambda^2*eye(n))\A';
-elseif m<=n
+elseif m<=n % right inverse
     pinvA = A'/(A*A'+lambda^2*eye(m));
 else
     disp('Sth goes wrong')
