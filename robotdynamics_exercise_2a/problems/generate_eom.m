@@ -30,6 +30,24 @@ eom.hamiltonian = sym(zeros(1,1));
 fprintf('Computing mass matrix M... ');
 % TODO: Implement M = ...;
 M = sym(zeros(6,6));
+
+for i=1:6
+    fprintf('M%i...',i);
+    % ith link Jacobians
+    I_Js_i = I_Jp_s{i};
+    I_Jr_i = I_Jr{i};
+    % ith link mass
+    m_i = m{i};
+    % ith link inertia tensor w.r.t. frame i
+    i_I_s_i = k_I_s{i};
+    % rotation matrix from frame i to frame I
+    R_Ii = R_Ik{i};
+    % ith link inertia tensor w.r.t. frame I
+    I_I_s_i = R_Ii*i_I_s_i*R_Ii';
+    % sequentially add mass matrix
+    M = M + I_Js_i'*m_i*I_Js_i + I_Jr_i'*I_I_s_i*I_Jr_i;
+end
+
 fprintf('done!\n');
 
 
@@ -37,6 +55,17 @@ fprintf('done!\n');
 fprintf('Computing gravity vector g... ');
 % TODO: Implement g = ...;
 g = sym(zeros(6,1));
+
+for i=1:6
+    fprintf('g%i...',i);
+    % ith link positiion Jacobian
+    I_Js_i = I_Jp_s{i};
+    % ith link mass
+    m_i = m{i};
+    % sequentially add gravity fterm
+    g = g - I_Js_i'*m_i*I_g_acc;
+end
+
 fprintf('done!\n');
 
 
@@ -44,6 +73,31 @@ fprintf('done!\n');
 fprintf('Computing coriolis and centrifugal vector b and simplifying... ');
 % TODO: Implement b = ...;
 b = sym(zeros(6,1));
+
+for i=1:6
+    fprintf('b%i...',i);
+    % ith link Jacobians
+    I_Js_i = I_Jp_s{i};
+    I_Jr_i = I_Jr{i};
+    % derivaties of Jacobians
+    I_dJs_i = simplify(dAdt(I_Js_i, phi, dphi));
+    I_dJr_i = simplify(dAdt(I_Jr_i, phi, dphi));
+    % ith link angular velocity
+    I_w_i = simplify(I_Jr_i*dphi);
+    % ith link mass
+    m_i = m{i};
+    % ith link inertia tensor w.r.t. frame i
+    i_I_s_i = k_I_s{i};
+    % rotation matrix from frame i to frame I
+    R_Ii = R_Ik{i};
+    % ith link inertia tensor w.r.t. frame I
+    I_I_s_i = simplify(R_Ii*i_I_s_i*R_Ii');
+    % sequentially add terms to form b
+    b = b + simplify(I_Js_i'*m_i*I_dJs_i*dphi);
+    b = b + simplify(I_Jr_i'*I_I_s_i*I_dJr_i*dphi);
+    b = b + simplify(I_Jr_i'*cross(I_w_i, I_I_s_i*I_w_i));
+end
+
 fprintf('done!\n');
 
 
@@ -53,6 +107,31 @@ fprintf('Computing total energy... ');
 hamiltonian = sym(zeros(1,1));
 enPot = sym(zeros(1,1));
 enKin = sym(zeros(1,1));
+
+for i=1:6
+    fprintf('enPot%i...',i);
+    % COM location of body i in frame i
+    k_r_ks_i = k_r_ks{i};
+    k_r_ks_i_expand = [k_r_ks_i; 1];
+    % homogenous tf from frame i to I
+    T_Ik_i = T_Ik{i};
+    % COM location of body i in frame I
+    I_r_ks_i_expand = T_Ik_i*k_r_ks_i_expand;
+    I_r_ks_i = I_r_ks_i_expand(1:3);
+    % ith link mass
+    m_i = m{i};
+    % sequentially add potential energy
+    enPot = enPot - I_r_ks_i'*m_i*I_g_acc;
+end
+
+fprintf('enKin...');
+enKin = 0.5*dphi'*M*dphi;
+
+fprintf('hamiltonian...');
+hamiltonian = enPot+enKin;
+fprintf('simplifying hamiltonian...');
+hamiltonian = simplify(hamiltonian);
+
 fprintf('done!\n');
 
 
