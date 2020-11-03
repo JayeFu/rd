@@ -18,4 +18,13 @@ kdMat = kd * diag([5000 3000 5 1 0.5 0.01]);
 % configuration.
 tau = zeros(6,1); % TODO
 
+% maybe we need to manually define the desiredjoint velocities
+joint_des_vel = 0.0;
+q_dot_des = repelem(joint_des_vel, 6)';
+
+% According to (3.75)
+g = g_fun_solution(q);
+tau = kpMat * (q_des - q) + kdMat * (q_dot_des - q_dot) + g;
+
+
 end
