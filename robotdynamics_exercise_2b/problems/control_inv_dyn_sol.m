@@ -1,4 +1,4 @@
-function [ tau ] = control_inv_dyn(I_r_IE_des, eul_IE_des, q, q_dot)
+function [ tau ] = control_inv_dyn_sol(I_r_IE_des, eul_IE_des, q, q_dot)
 % CONTROL_INV_DYN Operational-space inverse dynamics controller with a PD 
 % stabilizing feedback term.
 %
@@ -34,24 +34,12 @@ chi_err = [I_r_IE_des - I_r_Ie;
 
 % PD law, the orientation feedback is a torque around error rotation axis
 % proportional to the error angle.
-tau = zeros(6, 1); % TODO
-
-% calculting M, b, g for further use
-M = M_fun_solution(q);
-b = b_fun_solution(q, q_dot);
-g = g_fun_solution(q);
-
-% according to (3.87)-(3.89)
-M_inv = inv(M);
-Lambda = inv(I_J_e * M_inv * I_J_e');
-mu = Lambda * I_J_e * M_inv * b - Lambda * I_dJ_e * q_dot;
-p = Lambda * I_J_e * M_inv * g;
-
-% according to (3.91)
 w = I_J_e * q_dot;
-w_dot = kpMat * chi_err + kdMat * (-w);
+dw = kpMat * chi_err - kdMat * w;
+% ddq = pseudoInverseMat_solution(I_J_e, 0.1)*(dw - I_dJ_e * q_dot);
+ddq = pinv(I_J_e)*(dw - I_dJ_e * q_dot);
 
-% according to (3.90)
-tau = I_J_e' * (Lambda * w_dot + mu + p);
+%Inverse dynamics
+tau = M_fun_solution(q) * ddq + b_fun_solution(q, q_dot) + g_fun_solution(q);
 
 end
