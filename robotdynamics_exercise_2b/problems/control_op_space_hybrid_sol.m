@@ -1,4 +1,4 @@
-function [ tau ] = control_op_space_hybrid( I_r_IE_des, eul_IE_des, q, dq, I_F_E_x )
+function [ tau ] = control_op_space_hybrid_solution( I_r_IE_des, eul_IE_des, q, dq, I_F_E_x )
 % CONTROL_OP_SPACE_HYBRID Operational-space inverse dynamics controller 
 % with a PD stabilizing feedback term and a desired end-effector force.
 %
@@ -21,7 +21,7 @@ kdMat = kd * diag([1.0 1.0 1.0 1.0 1.0 1.0]);
 I_F_E = [I_F_E_x, 0.0, 0.0, 0.0, 0.0, 0.0]';
 
 % Find jacobians, positions and orientation
-I_J_e = I_Je_fun_solution(q);
+I_Je = I_Je_fun_solution(q);
 I_dJ_e = I_dJe_fun_solution(q, dq);
 T_IE = T_IE_fun_solution(q);
 I_r_IE = T_IE(1:3, 4);
@@ -36,38 +36,28 @@ orientation_error = rotMatToRotVec_solution(C_err);
 chi_err = [I_r_IE_des - I_r_IE;
            orientation_error];
 
-% Project the joint-space dynamics to the operational space
-% TODO
-
-% calculting M, b, g for further use
+% Project the joint-space dynamics to operational space
 M = M_fun_solution(q);
 b = b_fun_solution(q, dq);
 g = g_fun_solution(q);
-
-% according to (3.87)-(3.89)
-M_inv = inv(M);
-lambda = inv(I_J_e * M_inv * I_J_e');;
-mu = lambda * I_J_e * M_inv * b - lambda * I_dJ_e * dq;
-p =  lambda * I_J_e * M_inv * g;
-
-% according to (3.91)
-w = I_J_e * dq;
-w_dot = kpMat * chi_err + kdMat * (-w);
+j_invm = I_Je/M;
+% lambda = pseudoInverseMat_solution(j_invm*I_Je', 0.01);
+lambda = inv(j_invm*I_Je');
+mu = lambda*(j_invm*b - I_dJ_e*dq);
+p =  lambda*j_invm*g;
 
 % Define the motion and force selection matrices.
-% TODO
-Sigma_p = [0, 0, 0;
-    0, 1, 0;
-    0, 0, 1];
-Sigma_r = [1, 0, 0;
-    0, 1, 0;
-    0, 0, 1];
-Sm = [Sigma_p, zeros(3,3);
-    zeros(3,3), Sigma_r];
-Sf = [eye(3) - Sigma_p, zeros(3,3);
-    zeros(3,3), eye(3) - Sigma_r];
+Sm = eye(6);
+Sm(1,1) = 0;
+Sf = eye(6)-Sm;
+
 % Design a controller which implements the operational-space inverse
 % dynamics and exerts a desired force.
-tau = zeros(6,1); % TODO
-tau = I_J_e' * (lambda * Sm * w_dot + Sf * I_F_E + mu + p);
+dchi_err = zeros(6,1) - I_Je * dq; % target velocity is zero.
+I_F_E_des = lambda * Sm * (kpMat*chi_err + kdMat*dchi_err) ...
+          + Sf*I_F_E + mu + p;
+
+% Map the desired force back to the joint-space torques
+tau = I_Je'*I_F_E_des;
+
 end
